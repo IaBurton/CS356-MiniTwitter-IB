@@ -1,17 +1,28 @@
 package mtwitterGUI;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JTree;
 import javax.swing.JTextArea;
 import javax.swing.JButton;
+import javax.swing.SwingUtilities;
+import javax.swing.tree.DefaultMutableTreeNode;
+
+import mtwitter.Group;
+import mtwitter.User;
 
 /**
  * @author Ian Burton
  *
  */
-public class AdminPanel {
+public class AdminPanel implements ActionListener {
 
 	private JFrame frame;
+	private JTree tree;
+	private JTextArea txtUserID, txtGroupID;
 	private static AdminPanel instance = null;
 	
 	/**
@@ -45,30 +56,38 @@ public class AdminPanel {
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
 		
-		JTree tree = new JTree();
+		DefaultMutableTreeNode root = new Group("ROOT");
+		
+		tree = new JTree(root);
 		tree.setBounds(12, 0, 180, 272);
 		frame.getContentPane().add(tree);
 		
-		JTextArea txtUserID = new JTextArea();
+		txtUserID = new JTextArea();
 		txtUserID.setToolTipText("User ID");
 		txtUserID.setBounds(204, 2, 195, 38);
 		frame.getContentPane().add(txtUserID);
 		
-		JTextArea txtGroupID = new JTextArea();
+		txtGroupID = new JTextArea();
 		txtGroupID.setToolTipText("Group ID");
 		txtGroupID.setBounds(204, 45, 195, 38);
 		frame.getContentPane().add(txtGroupID);
 		
 		JButton addUser = new JButton("Add User");
 		addUser.setBounds(411, -3, 177, 40);
+		addUser.addActionListener(this);
+		addUser.setActionCommand("addUser");
 		frame.getContentPane().add(addUser);
 		
 		JButton addGroup = new JButton("Add Group");
 		addGroup.setBounds(411, 43, 177, 40);
+		addGroup.addActionListener(this);
+		addGroup.setActionCommand("addGroup");
 		frame.getContentPane().add(addGroup);
 		
 		JButton userView = new JButton("Open User View");
 		userView.setBounds(204, 97, 384, 25);
+		userView.addActionListener(this);
+		userView.setActionCommand("userView");
 		frame.getContentPane().add(userView);
 		
 		JButton userTotal = new JButton("Show User Total");
@@ -88,5 +107,69 @@ public class AdminPanel {
 		frame.getContentPane().add(positivePercent);
 		
 		//frame.setVisible(true); Not sure if this should be here or in Driver
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent ae) {
+		
+		DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
+		if(selectedNode == null)
+			selectedNode = (DefaultMutableTreeNode) tree.getModel().getRoot();
+		
+		switch (ae.getActionCommand())
+		{
+			case "addUser":
+			{
+				try
+				{
+					selectedNode.add(new User(txtUserID.getText()));
+					tree.updateUI();
+				}
+				catch (Exception e)
+				{
+					e.printStackTrace();
+					JOptionPane.showMessageDialog(null, "You cannot add a User to another User.",
+							"Error", JOptionPane.ERROR_MESSAGE);
+				}
+				break;
+			}
+			case "addGroup":
+			{
+				try
+				{
+					selectedNode.add(new Group(txtGroupID.getText()));
+					tree.updateUI();
+				}
+				catch (Exception e)
+				{
+					e.printStackTrace();
+					JOptionPane.showMessageDialog(null, "You cannot add a Group to a User.",
+							"Error", JOptionPane.ERROR_MESSAGE);
+				}
+				break;
+			}
+			case "userView":
+			{
+				if(selectedNode instanceof User)
+				{
+					User us = (User) selectedNode;
+					SwingUtilities.invokeLater(new Runnable() {
+						public void run() {
+							try {
+								UserPanel user = new UserPanel(us);
+								user.setVisibility(true);
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+						}
+					});
+				}
+				else
+					JOptionPane.showMessageDialog(null, "No User selected.",
+							"Error", JOptionPane.ERROR_MESSAGE);
+				break;
+			}
+		}
+		
 	}
 }

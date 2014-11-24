@@ -2,6 +2,7 @@ package mtwitterGUI;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.HashMap;
 
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -11,7 +12,9 @@ import javax.swing.JButton;
 import javax.swing.SwingUtilities;
 import javax.swing.tree.DefaultMutableTreeNode;
 
+import mtwitter.GoodVisitor;
 import mtwitter.Group;
+import mtwitter.TweetVisitor;
 import mtwitter.User;
 
 /**
@@ -24,6 +27,15 @@ public class AdminPanel implements ActionListener {
 	private JTree tree;
 	private JTextArea txtUserID, txtGroupID;
 	private static AdminPanel instance = null;
+	
+	//Counters for simple analytics, groupCounter starts at 1 because of root
+	private int userCounter = 0, groupCounter = 1;
+	
+	//Private hashmaps to ensure creation of unique users and groups
+	//If a user or group exists with that name / ID, append the ID
+	//with the number of those users, starts at 1 based indexing
+	//this is how Facebook does it, not sure about Twitter
+	private HashMap<String,Integer> uniUser, uniGroup;
 	
 	/**
 	 * Create the application.
@@ -56,7 +68,12 @@ public class AdminPanel implements ActionListener {
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
 		
+		uniUser = new HashMap<String,Integer>();
+		uniGroup = new HashMap<String,Integer>();
+		
+		//Create a root add it to used names, then make it the root of the jtree
 		DefaultMutableTreeNode root = new Group("ROOT");
+		uniGroup.put("ROOT", 1);
 		
 		tree = new JTree(root);
 		tree.setBounds(12, 0, 180, 272);
@@ -92,41 +109,78 @@ public class AdminPanel implements ActionListener {
 		
 		JButton userTotal = new JButton("Show User Total");
 		userTotal.setBounds(204, 176, 195, 40);
+		userTotal.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				//Simple inner actionlistner to return user total with joptionpane
+				JOptionPane.showMessageDialog(null, "User Total: " + userCounter,
+						"Users", JOptionPane.INFORMATION_MESSAGE);
+			}
+		});
 		frame.getContentPane().add(userTotal);
 		
 		JButton groupTotal = new JButton("Show Group Total");
 		groupTotal.setBounds(405, 176, 195, 40);
+		groupTotal.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				//Same as above but for group total
+				JOptionPane.showMessageDialog(null, "Group Total: " + groupCounter,
+						"Groups", JOptionPane.INFORMATION_MESSAGE);
+			}
+		});
 		frame.getContentPane().add(groupTotal);
 		
 		JButton messageTotal = new JButton("Show Messages Total");
 		messageTotal.setBounds(204, 218, 195, 40);
+		messageTotal.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				//Same as above but for tweet total
+				TweetVisitor tv = new TweetVisitor();
+				((Group)root).accept(tv);
+				tv.displayResult();
+			}
+		});
 		frame.getContentPane().add(messageTotal);
 		
 		JButton positivePercent = new JButton("Positive Percentage");
 		positivePercent.setBounds(405, 218, 195, 40);
+		positivePercent.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				//Same as above but for percentage positive
+				GoodVisitor gv = new GoodVisitor();
+				((Group)root).accept(gv);
+				gv.displayResult();
+			}
+		});
 		frame.getContentPane().add(positivePercent);
 		
-		//frame.setVisible(true); Not sure if this should be here or in Driver
+		//frame.setVisible(true); Not sure if this should be here or in Driver, made a method just in case
 	}
 
 	@Override
-	public void actionPerformed(ActionEvent ae) {
+	public void actionPerformed(ActionEvent ae) {//actionevent handler for most buttons
 		
+		//Get last selected node from tree, if no tree has been selected (program just started for example)
+		//Then set the last selected node as the root of the tree
 		DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
 		if(selectedNode == null)
 			selectedNode = (DefaultMutableTreeNode) tree.getModel().getRoot();
 		
 		switch (ae.getActionCommand())
-		{
+		{//Similar logic in the first two cases, probably a code smell
 			case "addUser":
-			{
+			{//add new user when add user button pressed
 				try
-				{
-					selectedNode.add(new User(txtUserID.getText()));
+				{//add new user with uniqueID, updateUI the increment total users counter
+					selectedNode.add(new User(getUnique(uniUser,txtUserID.getText())));
 					tree.updateUI();
+					userCounter++;
 				}
 				catch (Exception e)
-				{
+				{//user is not allowed to have children nodes, this catches that case
 					e.printStackTrace();
 					JOptionPane.showMessageDialog(null, "You cannot add a User to another User.",
 							"Error", JOptionPane.ERROR_MESSAGE);
@@ -134,11 +188,12 @@ public class AdminPanel implements ActionListener {
 				break;
 			}
 			case "addGroup":
-			{
+			{//add new group when add group button pressed
 				try
 				{
-					selectedNode.add(new Group(txtGroupID.getText()));
+					selectedNode.add(new Group(getUnique(uniGroup,txtGroupID.getText())));
 					tree.updateUI();
+					groupCounter++;
 				}
 				catch (Exception e)
 				{
@@ -149,15 +204,14 @@ public class AdminPanel implements ActionListener {
 				break;
 			}
 			case "userView":
-			{
+			{//open user view with userpanel instance attached to user, singleton userpanel for a specific user
 				if(selectedNode instanceof User)
 				{
 					User us = (User) selectedNode;
 					SwingUtilities.invokeLater(new Runnable() {
 						public void run() {
 							try {
-								UserPanel user = new UserPanel(us);
-								user.setVisibility(true);
+								us.getUserPanel().setVisibility(true);
 							} catch (Exception e) {
 								e.printStackTrace();
 							}
@@ -172,4 +226,20 @@ public class AdminPanel implements ActionListener {
 		}
 		
 	}
+	
+	private String getUnique(HashMap<String,Integer> map, String ID)
+	{//returns unique string for user/group ID
+		if(map.containsKey(ID))
+		{
+			int c = map.get(ID) + 1;
+			map.put(ID, c);
+			return ID + "." + c;
+		}
+		else
+		{
+			map.put(ID, 1);
+			return ID;
+		}
+	}
+	
 }

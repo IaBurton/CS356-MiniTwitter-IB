@@ -36,11 +36,7 @@ public class UserPanel implements ActionListener, TwitterObserver {
 		followListModel = new DefaultListModel<String>();
 		newsFeedModel = new DefaultListModel<String>();
 		
-		for(String s : user.getFollowings())
-			followListModel.addElement(s);
-		
-		for(String s : user.getNewsFeed())
-			newsFeedModel.addElement(s);
+		updateModels();
 		
 		initialize();
 	}
@@ -48,7 +44,29 @@ public class UserPanel implements ActionListener, TwitterObserver {
 	//Set frame visibility
 	public void setVisibility(boolean b)
 	{
+		if(b)
+		{//updateModels and clear text fields if we're coming back into scope
+			updateModels();
+			userID.setText("");
+			tweet.setText("");
+		}
+		
 		frame.setVisible(b);
+	}
+	
+	//Updates models that dynamically update UI as things happen when UI is open
+	//Also helps if same user panel is opened/closed/reopened
+	public void updateModels()
+	{//need to clear elements or will get repeats in model
+	 //adding elements that are not already added would be an alternative
+		followListModel.clear();
+		newsFeedModel.clear();
+		
+		for(String s : user.getFollowings())
+			followListModel.addElement(s);
+		
+		for(String s : user.getNewsFeed())
+			newsFeedModel.addElement(s);
 	}
 
 	/**
@@ -57,8 +75,9 @@ public class UserPanel implements ActionListener, TwitterObserver {
 	private void initialize() {
 		frame = new JFrame("User Panel: " + user.getID());
 		frame.setBounds(100, 100, 400, 400);
-		//Dispose instead of exit so we dont quit the entire application on the closing of a user panel
-		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		//Hide instead of exit so we dont quit the entire application on the closing of a user panel
+		//Also allows same panel to be reused
+		frame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
 		
 		userID = new JTextArea();
@@ -95,7 +114,7 @@ public class UserPanel implements ActionListener, TwitterObserver {
 	}
 	
 	private User findUserByID(String ID)
-	{
+	{//Finds another user by their ID, this method could exist in the User class or could be a visitor
 		@SuppressWarnings("unchecked")
 	    Enumeration<DefaultMutableTreeNode> e = ((DefaultMutableTreeNode) user.getRoot()).depthFirstEnumeration();
 	    while (e.hasMoreElements()) {
@@ -106,18 +125,32 @@ public class UserPanel implements ActionListener, TwitterObserver {
 	    }
 	    return null;
 	}
+	
+	//Checks if one user is already following a user
+	private boolean checkIfNotFollowing(User check)
+	{//Or is trying to follow themselves, this method could also be put into User class
+		if(check == null || check.getID().equals(user.getID()))
+			return false;
+		
+		for(String s : user.getFollowings())
+			if(check.getID().equals(s))
+				return false;
+		
+		return true;
+	}
 
 	@Override
-	public void actionPerformed(ActionEvent ae) {
+	public void actionPerformed(ActionEvent ae) {//event handler for buttons of userpanel
 		switch (ae.getActionCommand())
 		{
 			case "followUser":
-			{
+			{//follow a user
 				if(!userID.getText().equals(""))
-				{
+				{//find user and make sure we can follow them
 					User found = findUserByID(userID.getText());
+					boolean check = checkIfNotFollowing(found);
 					
-					if(found != null)
+					if(check)
 					{
 						user.addToFollowings(found.getID());
 						followListModel.addElement(found.getID());
@@ -125,8 +158,8 @@ public class UserPanel implements ActionListener, TwitterObserver {
 						found.addObserver(this);//not sure if this is how we should update UI
 					}
 					else
-						JOptionPane.showMessageDialog(null, "No User found with that ID.",
-								"Not Found", JOptionPane.INFORMATION_MESSAGE);
+						JOptionPane.showMessageDialog(null, "No User found with that ID, or already following that User.",
+								"Information", JOptionPane.INFORMATION_MESSAGE);
 				}
 				else
 					JOptionPane.showMessageDialog(null, "No User ID entered.",
@@ -134,14 +167,14 @@ public class UserPanel implements ActionListener, TwitterObserver {
 				break;
 			}
 			case "postTweet":
-			{
-				if(!tweet.getText().equals(""))
+			{//Send tweet, make sure it isnt empty or greater than 140 char
+				if(!tweet.getText().equals("") && (tweet.getText().length() <= 140))
 				{
 					user.setCurrentTweet(tweet.getText());
 					user.notifyObservers();
 				}
 				else
-					JOptionPane.showMessageDialog(null, "No tweet entered.",
+					JOptionPane.showMessageDialog(null, "No tweet entered, or tweet too long.",
 							"Error", JOptionPane.ERROR_MESSAGE);
 				break;
 			}
@@ -150,10 +183,10 @@ public class UserPanel implements ActionListener, TwitterObserver {
 	}
 
 	@Override
-	public void update(TwitterSubject subject) {
+	public void update(TwitterSubject subject) {//updateUI when new tweet is sent out
 		if(subject instanceof User)
-		{
-			newsFeedModel.addElement(((User)subject).getID() + ": " + ((User)subject).getCurrentTweet());
+		{//add to front of model so new tweets appear at the top
+			newsFeedModel.add(0, ((User)subject).getID() + ": " + ((User)subject).getCurrentTweet());
 		}
 	}
 }

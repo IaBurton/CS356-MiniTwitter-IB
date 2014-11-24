@@ -9,7 +9,9 @@ import javax.swing.tree.DefaultMutableTreeNode;
  * @author Ian Burton
  *
  */
-public abstract class TwitterSubject extends DefaultMutableTreeNode {
+//abstract class that makes sure any subject conforms to the DefaultMutableTreeNode component
+//allows observers to register / follow subjects and get updates from them
+public abstract class TwitterSubject extends DefaultMutableTreeNode implements AcceptVisitor {
 	
 	private static final long serialVersionUID = 42L;
 	private List<TwitterObserver> followers;

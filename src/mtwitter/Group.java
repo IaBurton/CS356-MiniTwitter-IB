@@ -15,11 +15,15 @@ public class Group extends DefaultMutableTreeNode implements AcceptVisitor {
 
 	private static final long serialVersionUID = 44L;
 	
+	//Added for assignment 3, doesnt seem to actually get displayed or used anywhere
+	private long creationTime;
+	
 	public Group(String ID) 
 	{
 		super();
 		super.setAllowsChildren(true);
 		super.setUserObject(ID);
+		creationTime = System.currentTimeMillis();
 	}
 
 	@Override
@@ -31,6 +35,11 @@ public class Group extends DefaultMutableTreeNode implements AcceptVisitor {
 		{
 			((AcceptVisitor)e.nextElement()).accept(visitor);
 		}
+	}
+	
+	public long getCreationTime()
+	{//return creationTime; Added for assignment 3
+		return creationTime;
 	}
 
 }

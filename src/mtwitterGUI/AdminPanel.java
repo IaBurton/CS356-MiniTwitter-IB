@@ -14,6 +14,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 
 import mtwitter.GoodVisitor;
 import mtwitter.Group;
+import mtwitter.LastUpdatedVisitor;
 import mtwitter.TweetVisitor;
 import mtwitter.User;
 
@@ -157,6 +158,19 @@ public class AdminPanel implements ActionListener {
 		});
 		frame.getContentPane().add(positivePercent);
 		
+		//Added for assignment 3
+		JButton showLastUpdated = new JButton("Show Last User Updated");
+		showLastUpdated.setBounds(204, 134, 384, 25);
+		showLastUpdated.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				LastUpdatedVisitor lu = new LastUpdatedVisitor();
+				((Group)root).accept(lu);
+				lu.displayResult();
+			}
+		});
+		frame.getContentPane().add(showLastUpdated);
+		
 		//frame.setVisible(true); Not sure if this should be here or in Driver, made a method just in case
 	}
 
@@ -228,7 +242,10 @@ public class AdminPanel implements ActionListener {
 	}
 	
 	private String getUnique(HashMap<String,Integer> map, String ID)
-	{//returns unique string for user/group ID
+	{	
+		//Remove whitespace from ID; Added for assignment 3
+		ID = ID.replaceAll("\\s","");
+		//returns unique string for user/group ID
 		if(map.containsKey(ID))
 		{
 			int c = map.get(ID) + 1;
@@ -241,5 +258,4 @@ public class AdminPanel implements ActionListener {
 			return ID;
 		}
 	}
-	
 }

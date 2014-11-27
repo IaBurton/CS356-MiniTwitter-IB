@@ -16,6 +16,9 @@ public class User extends TwitterSubject implements TwitterObserver {
 	private List<String> followings, newsFeed;
 	private String message;
 	
+	//These could potentially be in Subject; Added for assignment 3
+	private long creationTime, lastUpdateTime;
+	
 	//Did not originally plan to have this reference in User
 	//But after discovering the difficulty in updating the UI after it has been opened, closed and reopened
 	//It seemed the best solution was to keep only one user panel per user, a sort-of singleton pattern
@@ -29,6 +32,8 @@ public class User extends TwitterSubject implements TwitterObserver {
 		super.setUserObject(ID);
 		followings = new LinkedList<String>();
 		newsFeed = new LinkedList<String>();
+		creationTime = System.currentTimeMillis();
+		lastUpdateTime = System.currentTimeMillis();
 	}
 	
 	public UserPanel getUserPanel()
@@ -48,10 +53,27 @@ public class User extends TwitterSubject implements TwitterObserver {
 		return (String) super.getUserObject();
 	}
 	
+	public long getCreationTime()
+	{//return creationTime; Added for assignment 3
+		return creationTime;
+	}
+	
+	public void setLastUpdateTime()
+	{//setupdatetime; Added for assignment 3
+		lastUpdateTime = System.currentTimeMillis();
+	}
+	
+	public long getLastUpdateTime()
+	{
+		return lastUpdateTime;
+	}
+	
 	public void setCurrentTweet(String tweet)
 	{//sets current tweet and adds it to this newsfeed
 		message = tweet;
 		newsFeed.add(0, this.getID() + ": " + message);
+		//Added for assignment 3
+		setLastUpdateTime();
 	}
 	
 	public String getCurrentTweet()
@@ -79,6 +101,8 @@ public class User extends TwitterSubject implements TwitterObserver {
 		if(subject instanceof User)
 		{//updates this newsfeed when someone we follow has sent a tweet
 			newsFeed.add(0, ((User)subject).getID() + ": " + ((User)subject).getCurrentTweet());
+			//Added for assignment 3
+			setLastUpdateTime();
 		}
 	}
 

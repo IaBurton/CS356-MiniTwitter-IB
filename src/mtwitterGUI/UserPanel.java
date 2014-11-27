@@ -15,6 +15,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import mtwitter.TwitterObserver;
 import mtwitter.TwitterSubject;
 import mtwitter.User;
+import javax.swing.JLabel;
 
 /**
  * @author Ian Burton
@@ -28,6 +29,7 @@ public class UserPanel implements ActionListener, TwitterObserver {
 	private DefaultListModel<String> followListModel, newsFeedModel;
 	private User user;
 	
+	private JLabel lastUpdateLabel;
 	/**
 	 * Create the application.
 	 */
@@ -73,8 +75,9 @@ public class UserPanel implements ActionListener, TwitterObserver {
 	 * Initialize the contents of the frame.
 	 */
 	private void initialize() {
-		frame = new JFrame("User Panel: " + user.getID());
-		frame.setBounds(100, 100, 400, 400);
+		//Added creationTime to title of window / panel. Probably not the best place but easy enough for now
+		frame = new JFrame("User Panel: " + user.getID() + " Joined: " + user.getCreationTime());
+		frame.setBounds(100, 100, 400, 428);
 		//Hide instead of exit so we dont quit the entire application on the closing of a user panel
 		//Also allows same panel to be reused
 		frame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
@@ -111,6 +114,12 @@ public class UserPanel implements ActionListener, TwitterObserver {
 		newsFeed.setToolTipText("News Feed");
 		newsFeed.setBounds(12, 235, 366, 125);
 		frame.getContentPane().add(newsFeed);
+		
+		//Added for assignment 3
+		lastUpdateLabel = new JLabel("New label");
+		lastUpdateLabel.setBounds(12, 373, 366, 15);
+		lastUpdateLabel.setText("Last Update At: " + user.getLastUpdateTime());
+		frame.getContentPane().add(lastUpdateLabel);
 	}
 	
 	private User findUserByID(String ID)
@@ -187,6 +196,7 @@ public class UserPanel implements ActionListener, TwitterObserver {
 		if(subject instanceof User)
 		{//add to front of model so new tweets appear at the top
 			newsFeedModel.add(0, ((User)subject).getID() + ": " + ((User)subject).getCurrentTweet());
+			lastUpdateLabel.setText("Last Update At: " + user.getLastUpdateTime());
 		}
 	}
 }
